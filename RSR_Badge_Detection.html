@@ -47,13 +47,37 @@
     }
 
     // run the webcam image through the image model
-    async function predict() {
-        // predict can take in an image, video or canvas html element
-        const prediction = await model.predict(webcam.canvas);
-        for (let i = 0; i < maxPredictions; i++) {
-            const classPrediction =
-                prediction[i].className + ": " + prediction[i].probability.toFixed(2);
-            labelContainer.childNodes[i].innerHTML = classPrediction;
+async function predict() {
+    webcam.update();
+
+    const slices = 4; // 横4分割、縦4分割の16スライスにするとかも可
+    const sliceWidth = webcam.canvas.width / slices;
+    const sliceHeight = webcam.canvas.height / slices;
+
+    labelContainer.innerHTML = ""; // 前の結果消す
+
+    for (let y = 0; y < slices; y++) {
+        for (let x = 0; x < slices; x++) {
+            // スライス用のcanvasを作成
+            const sliceCanvas = document.createElement("canvas");
+            sliceCanvas.width = sliceWidth;
+            sliceCanvas.height = sliceHeight;
+            const ctx = sliceCanvas.getContext("2d");
+            // 元の映像の一部を切り取る
+            ctx.drawImage(webcam.canvas, x * sliceWidth, y * sliceHeight, sliceWidth, sliceHeight, 0, 0, sliceWidth, sliceHeight);
+
+            // そのスライスをモデルに投げて判定
+            const prediction = await model.predict(sliceCanvas);
+            // 予測確率が閾値より高いものだけ表示
+            prediction.forEach(p => {
+                if (p.probability > 0.7) {  // 確率0.7以上を信頼できる判定に設定
+                    const div = document.createElement("div");
+                    div.textContent = `${p.className}: ${p.probability.toFixed(2)}`;
+                    labelContainer.appendChild(div);
+                }
+            });
         }
     }
+}
+
 </script>
