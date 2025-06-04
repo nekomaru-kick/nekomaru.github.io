@@ -79,8 +79,8 @@
       model = await tmImage.load(modelURL, metadataURL);
       maxPredictions = model.getTotalClasses();
 
-      webcam = new tmImage.Webcam(400, 400, false, selectedDeviceId);
-      await webcam.setup();
+      webcam = new tmImage.Webcam(400, 400, false);
+      await webcam.setup({ video: { deviceId: selectedDeviceId } });
       await webcam.play();
       window.requestAnimationFrame(loop);
 
