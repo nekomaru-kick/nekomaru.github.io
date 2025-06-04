@@ -80,7 +80,11 @@
       maxPredictions = model.getTotalClasses();
 
       webcam = new tmImage.Webcam(400, 400, false);
-      await webcam.setup({ video: { deviceId: selectedDeviceId } });
+      if (selectedDeviceId) {
+        await webcam.setup({ video: { deviceId: selectedDeviceId } });
+        } else {
+        await webcam.setup({ facingMode: "environment" });
+      }
       await webcam.play();
       window.requestAnimationFrame(loop);
 
