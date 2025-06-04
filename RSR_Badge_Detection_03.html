@@ -3,17 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>親分のAIカメラにゃん♪</title>
+  <title>親分AIカメラにゃん</title>
   <style>
     body {
       margin: 0;
       font-family: sans-serif;
       padding-bottom: 60px;
-      background-color: #f9f9f9;
     }
     .content {
       padding: 20px;
-      text-align: center;
     }
     .bottom-nav {
       position: fixed;
@@ -26,47 +24,39 @@
       align-items: center;
       color: white;
     }
-    .bottom-nav a {
-      color: white;
-      text-decoration: none;
-      font-size: 14px;
-    }
-    button {
-      padding: 10px 20px;
-      font-size: 16px;
-      margin: 10px;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 8px;
+    .bottom-nav div {
       cursor: pointer;
+      font-size: 14px;
     }
     #webcam-container {
       margin-top: 20px;
+      text-align: center;
     }
-    #label-container div {
-      font-size: 16px;
-      margin: 4px;
+    #webcam-container canvas {
+      width: 90%;
+      height: auto;
+      display: inline-block;
+    }
+    #label-container {
+      font-size: 20px;
+      font-weight: bold;
+      text-align: center;
+      margin-top: 10px;
     }
   </style>
 </head>
 <body>
-
   <div class="content">
     <h1>こんにちは親分にゃん！</h1>
-    <p>これはAIカメラとナビ付きのページにゃん📸✨</p>
-    <button type="button" onclick="init()">カメラスタートにゃん！</button>
+    <p>AIカメラで画像判定できるにゃんよ🐾</p>
     <div id="webcam-container"></div>
     <div id="label-container"></div>
   </div>
 
   <div class="bottom-nav">
-    <a href="#">🏠 ホーム</a>
-    <a href="#">📷 カメラ</a>
-    <a href="#">⚙ 設定</a>
+    <div onclick="init()">📷 カメラ起動にゃん</div>
   </div>
 
-  <!-- Teachable Machine Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
   <script type="text/javascript">
@@ -89,9 +79,6 @@
 
         document.getElementById("webcam-container").appendChild(webcam.canvas);
         labelContainer = document.getElementById("label-container");
-        for (let i = 0; i < maxPredictions; i++) {
-            labelContainer.appendChild(document.createElement("div"));
-        }
     }
 
     async function loop() {
@@ -102,13 +89,14 @@
 
     async function predict() {
         const prediction = await model.predict(webcam.canvas);
-        for (let i = 0; i < maxPredictions; i++) {
-            const classPrediction =
-                prediction[i].className + ": " + prediction[i].probability.toFixed(2);
-            labelContainer.childNodes[i].innerHTML = classPrediction;
+        let topResult = prediction[0];
+        for (let i = 1; i < prediction.length; i++) {
+            if (prediction[i].probability > topResult.probability) {
+                topResult = prediction[i];
+            }
         }
+        labelContainer.innerHTML = `にゃん判定：<br><strong>${topResult.className}</strong> (${(topResult.probability * 100).toFixed(1)}%)`;
     }
   </script>
-
 </body>
 </html>
