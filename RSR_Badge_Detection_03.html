@@ -3,15 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>親分AIカメラにゃん</title>
+  <title>カメラAI判定にゃん</title>
   <style>
     body {
       margin: 0;
       font-family: sans-serif;
       padding-bottom: 60px;
+      text-align: center;
     }
-    .content {
-      padding: 20px;
+    #webcam-container canvas {
+      width: 90vw;
+      height: auto;
+      margin: 20px auto;
+      display: block;
     }
     .bottom-nav {
       position: fixed;
@@ -20,83 +24,102 @@
       height: 60px;
       background-color: #333;
       display: flex;
-      justify-content: space-around;
+      justify-content: center;
       align-items: center;
       color: white;
     }
-    .bottom-nav div {
+    .bottom-nav select {
+      margin-right: 10px;
+      font-size: 16px;
+    }
+    .bottom-nav button {
+      font-size: 16px;
+      padding: 10px 20px;
+      background-color: #ff69b4;
+      border: none;
+      border-radius: 10px;
+      color: white;
       cursor: pointer;
-      font-size: 14px;
-    }
-    #webcam-container {
-      margin-top: 20px;
-      text-align: center;
-    }
-    #webcam-container canvas {
-      width: 90%;
-      height: auto;
-      display: inline-block;
     }
     #label-container {
-      font-size: 20px;
+      font-size: 24px;
       font-weight: bold;
-      text-align: center;
+      color: #444;
       margin-top: 10px;
     }
   </style>
 </head>
 <body>
-  <div class="content">
-    <h1>こんにちは親分にゃん！</h1>
-    <p>AIカメラで画像判定できるにゃんよ🐾</p>
-    <div id="webcam-container"></div>
-    <div id="label-container"></div>
-  </div>
+  <h1>猫丸AIカメラにゃん📷</h1>
+  <div id="webcam-container"></div>
+  <div id="label-container">判定結果はここに表示にゃん</div>
 
   <div class="bottom-nav">
-    <div onclick="init()">📷 カメラ起動にゃん</div>
+    <select id="camera-select"></select>
+    <button onclick="init()">カメラスタートにゃん！</button>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
-  <script type="text/javascript">
+  <script>
     const URL = "https://teachablemachine.withgoogle.com/models/ctqLmUZgt/";
-
     let model, webcam, labelContainer, maxPredictions;
+    let cameras = [];
 
     async function init() {
-        const modelURL = URL + "model.json";
-        const metadataURL = URL + "metadata.json";
+      const select = document.getElementById("camera-select");
+      const selectedDeviceId = select.value;
 
-        model = await tmImage.load(modelURL, metadataURL);
-        maxPredictions = model.getTotalClasses();
+      if (webcam) {
+        webcam.stop();
+      }
 
-        const flip = true;
-        webcam = new tmImage.Webcam(200, 200, flip);
-        await webcam.setup();
-        await webcam.play();
-        window.requestAnimationFrame(loop);
+      const modelURL = URL + "model.json";
+      const metadataURL = URL + "metadata.json";
+      model = await tmImage.load(modelURL, metadataURL);
+      maxPredictions = model.getTotalClasses();
 
-        document.getElementById("webcam-container").appendChild(webcam.canvas);
-        labelContainer = document.getElementById("label-container");
+      webcam = new tmImage.Webcam(400, 400, false, selectedDeviceId);
+      await webcam.setup();
+      await webcam.play();
+      window.requestAnimationFrame(loop);
+
+      const container = document.getElementById("webcam-container");
+      container.innerHTML = "";
+      container.appendChild(webcam.canvas);
+
+      labelContainer = document.getElementById("label-container");
     }
 
     async function loop() {
-        webcam.update();
-        await predict();
-        window.requestAnimationFrame(loop);
+      webcam.update();
+      await predict();
+      window.requestAnimationFrame(loop);
     }
 
     async function predict() {
-        const prediction = await model.predict(webcam.canvas);
-        let topResult = prediction[0];
-        for (let i = 1; i < prediction.length; i++) {
-            if (prediction[i].probability > topResult.probability) {
-                topResult = prediction[i];
-            }
-        }
-        labelContainer.innerHTML = `にゃん判定：<br><strong>${topResult.className}</strong> (${(topResult.probability * 100).toFixed(1)}%)`;
+      const prediction = await model.predict(webcam.canvas);
+      const topPrediction = prediction.reduce((prev, current) => {
+        return (prev.probability > current.probability) ? prev : current;
+      });
+      labelContainer.innerHTML = `${topPrediction.className} にゃ！（信頼度: ${(topPrediction.probability * 100).toFixed(1)}%）`;
     }
+
+    async function loadCameras() {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      cameras = devices.filter(device => device.kind === "videoinput");
+
+      const select = document.getElementById("camera-select");
+      select.innerHTML = "";
+      cameras.forEach((cam, i) => {
+        const option = document.createElement("option");
+        option.value = cam.deviceId;
+        option.text = cam.label || `カメラ${i + 1}`;
+        select.appendChild(option);
+      });
+    }
+
+    loadCameras();
   </script>
 </body>
 </html>
