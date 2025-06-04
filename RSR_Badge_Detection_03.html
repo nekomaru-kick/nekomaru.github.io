@@ -50,7 +50,7 @@
   </style>
 </head>
 <body>
-  <h1>RSR Badge Detect</h1>
+  <h1>RSR Badge Detect2</h1>
   <div id="webcam-container"></div>
   <div id="label-container">※カメラの起動まで、少し時間を要します。</div>
 
@@ -80,11 +80,7 @@
       maxPredictions = model.getTotalClasses();
 
       webcam = new tmImage.Webcam(400, 400, false);
-      if (selectedDeviceId) {
-        await webcam.setup({ video: { deviceId: selectedDeviceId } });
-        } else {
-        await webcam.setup({ facingMode: "environment" });
-      }
+      await webcam.setup({ facingMode: "environment" });
       await webcam.play();
       window.requestAnimationFrame(loop);
 
