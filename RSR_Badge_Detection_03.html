@@ -104,13 +104,50 @@
       window.requestAnimationFrame(loop);
     }
 
+    // ⏱ 予測履歴を保存するにゃ〜
+    const predictionHistory = [];
+    const HISTORY_DURATION_MS = 2000; // 2秒にゃん
+
     async function predict() {
+      const now = Date.now();
       const prediction = await model.predict(webcam.canvas);
       const topPrediction = prediction.reduce((prev, current) => {
         return (prev.probability > current.probability) ? prev : current;
       });
-      labelContainer.innerHTML = `${topPrediction.className} にゃ！（信頼度: ${(topPrediction.probability * 100).toFixed(1)}%）`;
+
+      // 履歴に記録にゃ
+      predictionHistory.push({
+        className: topPrediction.className,
+        timestamp: now
+      });
+
+      // 古い履歴を捨てるにゃ
+      while (predictionHistory.length > 0 && (now - predictionHistory[0].timestamp > HISTORY_DURATION_MS)) {
+        predictionHistory.shift();
+      }
+
+      // 集計にゃ
+      const counts = {};
+      predictionHistory.forEach(entry => {
+        counts[entry.className] = (counts[entry.className] || 0) + 1;
+      });
+
+      // 一番多く出てきたクラスを選ぶにゃ
+      let mostFrequentClass = null;
+      let maxCount = 0;
+      for (const [className, count] of Object.entries(counts)) {
+        if (count > maxCount) {
+          mostFrequentClass = className;
+          maxCount = count;
+        }
+      }
+
+      // 表示にゃー！
+      if (mostFrequentClass) {
+        labelContainer.innerHTML = `${mostFrequentClass} にゃ！（2秒間の平均で最も登場）`;
+      }
     }
+
 
     async function loadCameras() {
       const devices = await navigator.mediaDevices.enumerateDevices();
