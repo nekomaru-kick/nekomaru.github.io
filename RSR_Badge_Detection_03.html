@@ -55,7 +55,7 @@
   <div id="label-container">※カメラの起動まで、少し時間を要します。</div>
 
   <div class="bottom-nav">
-    <select id="camera-select"></select>
+  <!-- <select id="camera-select"></select> -->
     <button onclick="init()">カメラスタート</button>
   </div>
 
@@ -67,9 +67,6 @@
     let cameras = [];
 
     async function init() {
-      const select = document.getElementById("camera-select");
-      const selectedDeviceId = select.value;
-
       if (webcam) {
         webcam.stop();
       }
@@ -80,7 +77,16 @@
       maxPredictions = model.getTotalClasses();
 
       webcam = new tmImage.Webcam(400, 400, false);
-      await webcam.setup({ facingMode: "environment" });
+
+      try {
+        // 💡 環境（背面）カメラを優先して起動にゃ
+        await webcam.setup({ facingMode: { exact: "environment" } });
+      } catch (e) {
+        // 🐾 もし背面が無かったら、前面 or 1つ目のカメラを使うにゃ
+        console.warn("背面カメラが見つからなかったにゃ〜、代わりにデフォルトを使うにゃ", e);
+        await webcam.setup(); // デフォルト（多くは前面）
+      }
+
       await webcam.play();
       window.requestAnimationFrame(loop);
 
@@ -90,6 +96,7 @@
 
       labelContainer = document.getElementById("label-container");
     }
+
 
     async function loop() {
       webcam.update();
